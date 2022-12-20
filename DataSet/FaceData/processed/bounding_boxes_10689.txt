@@ -1,0 +1,18 @@
+Dataset/FaceData/processed\Vi\318568260_724500621931314_6922673920731971918_n.png 455 687 1087 1552
+Dataset/FaceData/processed\Vi\317949941_837550297578019_396529911735572810_n.png 341 627 1010 1513
+Dataset/FaceData/processed\Vi\317930111_1182193032679069_5558555645254035764_n.png 99 602 768 1435
+Dataset/FaceData/processed\Vi\318030386_1643966072668148_5743190633551673910_n.png 453 685 1098 1559
+Dataset/FaceData/processed\Vi\318011579_1562928724146057_8481929495072652842_n.png 18 553 898 1696
+Dataset/FaceData/processed\Vi\318789769_673129264269416_8171185148315934912_n.png 115 751 760 1571
+Dataset/FaceData/processed\Vi\318077022_876482210361596_1717615109386673304_n.png 472 679 1102 1548
+Dataset/FaceData/processed\Hau\face (100).png 1633 1951 2656 3284
+Dataset/FaceData/processed\Hau\face (88).png 1333 1588 2549 3340
+Dataset/FaceData/processed\Hau\face (105).png 1206 2028 2709 3917
+Dataset/FaceData/processed\Hau\face (104).png 1334 1954 2178 2853
+Dataset/FaceData/processed\Hau\face (98).png 1350 1659 2496 3148
+Dataset/FaceData/processed\Hau\face (103).png 1383 1361 2498 2783
+Dataset/FaceData/processed\Hau\face (97).png 1244 1758 2433 3707
+Dataset/FaceData/processed\Hau\face (99).png 1363 1967 2181 3011
+Dataset/FaceData/processed\Hau\face (95).png 1219 1521 2191 2835
+Dataset/FaceData/processed\Hau\face (102).png 1055 1675 2017 2931
+Dataset/FaceData/processed\Hau\face (101).png 653 1867 1665 3143
