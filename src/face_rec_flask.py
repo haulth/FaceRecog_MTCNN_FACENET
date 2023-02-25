@@ -62,7 +62,7 @@ CORS(app)
 def index():
     return "OK!";
 
-@app.route('/', methods=['POST'])
+@app.route('/demo/', methods=['POST'])
 @cross_origin()
 def upload_img_file():
     if request.method == 'POST':
