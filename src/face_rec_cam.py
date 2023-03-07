@@ -76,7 +76,9 @@ def main():
                         cv2.putText(frame, "Only one face", (0, 100), cv2.FONT_HERSHEY_COMPLEX_SMALL,
                                     1, (255, 255, 255), thickness=1, lineType=2)
                     elif faces_found > 0:
+                        
                         det = bounding_boxes[:, 0:4]
+                        print(det, "det")
                         bb = np.zeros((faces_found, 4), dtype=np.int32)
                         for i in range(faces_found):
                             bb[i][0] = det[i][0]
