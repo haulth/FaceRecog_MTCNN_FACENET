@@ -15,5 +15,11 @@ python face_rec_cam.py
 pip install flask
 python face_rec_flask.py 
 ## run with api fastapi
-comming soon
-'''
+start server:
+```
+uvicorn main:app --reload  --port 8000
+```
+link access to local server: 
+```
+http://localhost:8000/docs#/
+```
