@@ -82,18 +82,17 @@ class BarcodeReader:
         # draw bounding box around barcode and display barcode type and data to terminal
         decoded_objs = decode(frame)
         barcodes = []
-        bb=[]
+       
         for obj in decoded_objs:
             barcodes.append(obj.data.decode('utf-8'))
             # Draw bounding box around barcode
             (x, y, w, h) = obj.rect
-            bb=obj.rect
             #viết chữ lên ảnh
             cv2.putText(frame, barcodes[-1], (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             if self.verbose:
                 print("Barcode: ", barcodes[-1])
-        return barcodes, bb
+        return barcodes, frame
 def main(args):
     # Load face detector and recognizer
     detector = FaceDetector(

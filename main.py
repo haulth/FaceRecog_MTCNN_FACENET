@@ -52,6 +52,7 @@ def get_image_from_bytes(byte_string):
     img = Image.open(io.BytesIO(byte_string))
     return img
 
+
 @app.get('/notify/v1/health')
 def get_health():
     """
@@ -73,9 +74,11 @@ def get_health():
 @app.post("/object-to-json")
 async def detect_food_return_json_result(file: bytes = File(...)):
     input_image = get_image_from_bytes(file)
-    faces = detector.get_faces(input_image)
     input_image = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
     rgb = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+    faces = detector.get_faces(rgb)
+    
+    
     predictions = []
     # Detect faces in the frame
     faces, _= detector.get_faces(rgb)
@@ -111,16 +114,17 @@ async def detect_food_return_json_result(file: bytes = File(...)):
 async def detect_food_return_base64_img(file: bytes = File(...)):
     input_image = get_image_from_bytes(file)
     input_image = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
-    faces = detector.get_faces(input_image)
-    rgb = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+    barcodes,img = barcode_reader.read_barcodes(input_image)
+    faces = detector.get_faces(img)
+    
     predictions = []
     # Detect faces in the frame
-    faces, _= detector.get_faces(rgb)
+    faces, _= detector.get_faces(img)
     for face in faces:
         x1, y1, x2, y2 = face[:4]
 
         # Get face image
-        face_img = rgb[int(y1):int(y2), int(x1):int(x2), :]
+        face_img = img[int(y1):int(y2), int(x1):int(x2), :]
 
         # Get face embeddings
         embeddings = detector.get_embeddings(face_img)
@@ -128,15 +132,14 @@ async def detect_food_return_base64_img(file: bytes = File(...)):
         # Recognize face
         name, prob = recognizer.recognize_face(embeddings)
         predictions.append((name, prob))
-        cv2.rectangle(input_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        cv2.putText(input_image, "{} {:.2f}".format(name, prob), (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+        cv2.putText(img, "{} {:.2f}".format(name, prob), (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     # Read barcodes from the image
-    barcodes,(x, y, w, h) = barcode_reader.read_barcodes(input_image)
-    cv2.putText(input_image, barcodes[-1], (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-    cv2.rectangle(input_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+
     # Convert the image to base64 format
     img_buffer = BytesIO()
-    Image.fromarray(input_image).save(img_buffer, format="JPEG")
+    Image.fromarray(img).save(img_buffer, format="JPEG")
     img_str = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
     #img_base64.save(bytes_io, format="jpeg")
-    return Response(content=img_str, media_type="image/jpeg")
+    return Response(content=img_buffer.getvalue(), media_type="image/jpeg")
