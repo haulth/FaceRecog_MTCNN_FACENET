@@ -1,3 +1,5 @@
+# 📃Face Recognition
+ <h1 align="center">Model MTCNN & FACENET</h1> 
 # Copyright
 Nhận diện khuôn mặt khá chuẩn xác bằng MTCNN và Facenet!
 Chạy trên Tensorflow 2.x
@@ -36,3 +38,9 @@ link access to local server:
 ```
 http://localhost:8000/docs#/
 ```
+## Author
+
+👤**Trung Hau**
+
+
+## 🤝 Thank you for reading ❤️
