@@ -104,7 +104,7 @@ def upload_img_file():
                 best_name = class_names[best_class_indices[0]]
                 print("Name: {}, Probability: {}".format(best_name, best_class_probabilities))
 
-                if best_class_probabilities > 0.8:
+                if best_class_probabilities > 0.5:
                     name = class_names[best_class_indices[0]]
                 else:
                     name = "Unknown"
