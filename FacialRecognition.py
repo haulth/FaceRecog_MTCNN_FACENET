@@ -18,8 +18,25 @@ import cv2
 import collections
 from sklearn.svm import SVC
 from pyzbar.pyzbar import decode
+import dlib
 
 
+# Khởi tạo dlib's face detector (HOG-based)
+dlibdetector = dlib.get_frontal_face_detector()
+
+# Tải pre-trained facial landmark predictor của dlib
+predictor = dlib.shape_predictor("Models/shape_predictor_68_face_landmarks.dat")
+
+# Định nghĩa hàm tính tỷ lệ mắt nhắm lại (EAR) cho mắt phải
+def calculate_ear(eye_points):
+    # Tính chiều rộng của mắt
+    eye_width = (eye_points[5][0] - eye_points[0][0] + 1)
+    # Tính chiều cao của nửa trên và dưới của mắt
+    eye_height1 = ((eye_points[5][1] + eye_points[4][1]) // 2 - eye_points[1][1] + 1)
+    eye_height2 = ((eye_points[3][1] + eye_points[2][1]) // 2 - eye_points[0][1] + 1)
+    # Tính tỷ lệ mắt nhắm lại (EAR) cho mắt
+    ear = (eye_height1 + eye_height2) / (2.0 * eye_width)
+    return ear
 class FaceDetector:
     def __init__(self, minsize: int, threshold: List[float], factor: float, gpu_memory_fraction: float, detect_face_model_path: str, facenet_model_path: str):
         self.minsize = minsize
@@ -82,7 +99,6 @@ class BarcodeReader:
         # draw bounding box around barcode and display barcode type and data to terminal
         decoded_objs = decode(frame)
         barcodes = []
-       
         for obj in decoded_objs:
             barcodes.append(obj.data.decode('utf-8'))
             # Draw bounding box around barcode
@@ -92,7 +108,7 @@ class BarcodeReader:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             if self.verbose:
                 print("Barcode: ", barcodes[-1])
-        return barcodes, frame
+        return barcodes
 def main(args):
     # Load face detector and recognizer
     detector = FaceDetector(
@@ -119,7 +135,34 @@ def main(args):
         # If the frame is None, then we have reached the end of the stream
         if frame is None:
             break
+        # Chuyển đổi frame sang định dạng grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+        # Phát hiện khuôn mặt trong frame
+        dlibfaces = dlibdetector(gray)
+
+        # Lặp qua từng khuôn mặt phát hiện được
+        for rect in dlibfaces:
+            # Xác định các điểm landmark trên khuôn mặt
+            shape = predictor(gray, rect)
+            #shape = dlib.face_utils.shape_to_np(shape)
+            #convert dlib shape to numpy array with numpy lib
+            shape = np.array([[p.x, p.y] for p in shape.parts()], dtype=np.int32)
+
+            
+
+            # Tính EAR cho mắt phải và mắt trái
+            ear_right = calculate_ear(shape[36:42])
+            ear_left = calculate_ear(shape[42:48])
+
+            # Vẽ đường bao quanh mắt phải và mắt trái
+            cv2.polylines(frame, [shape[36:42]], True, (0, 255, 0), 1)
+            cv2.polylines(frame, [shape[42:48]], True, (0, 255, 0), 1)
+
+            # Kiểm tra nếu EAR của mắt phải và mắt trái thấp hơn ngưỡng
+            if ear_right < 0.2 or ear_left < 0.2:
+                cv2.putText(frame, "Nham mat", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                print("Nham mat")
         # Convert the frame from BGR to RGB
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
