@@ -90,11 +90,27 @@ def main(args):
             classifier_filename_exp = os.path.expanduser(args.classifier_filename)
 
             if (args.mode=='TRAIN'):
-                # Train classifier
+                # # Train classifier
+                # print('Training classifier')
+                # model = SVC(kernel='linear', probability=True)
+                # model.fit(emb_array, labels)
+            
+                # # Create a list of class names
+                # class_names = [ cls.name.replace('_', ' ') for cls in dataset]
+
+                # # Saving classifier model
+                # with open(classifier_filename_exp, 'wb') as outfile:
+                #     pickle.dump((model, class_names), outfile)
+                # print('Saved classifier model to file "%s"' % classifier_filename_exp)
+                    # Train classifier
                 print('Training classifier')
                 model = SVC(kernel='linear', probability=True)
                 model.fit(emb_array, labels)
-            
+
+                # Compute training accuracy
+                train_predictions = model.predict(emb_array)
+                train_accuracy = np.mean(np.equal(train_predictions, labels))
+
                 # Create a list of class names
                 class_names = [ cls.name.replace('_', ' ') for cls in dataset]
 
@@ -102,6 +118,7 @@ def main(args):
                 with open(classifier_filename_exp, 'wb') as outfile:
                     pickle.dump((model, class_names), outfile)
                 print('Saved classifier model to file "%s"' % classifier_filename_exp)
+                print('Training accuracy: %.3f' % train_accuracy)
                 
             elif (args.mode=='CLASSIFY'):
                 # Classify images

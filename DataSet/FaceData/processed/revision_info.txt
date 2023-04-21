@@ -1,7 +1,0 @@
-arguments: src/align_dataset_mtcnn.py Dataset/FaceData/raw Dataset/FaceData/processed --image_size 160 --margin 32 --random_order --gpu_memory_fraction 0.25
---------------------
-tensorflow version: 2.11.0
---------------------
-git hash: b'cc2e20ab1c8e25587a16b5bb9e37a14e858c9d95'
---------------------
-b'diff --git a/requirements.txt b/requirements.txt\nindex aa078a0..f48495c 100644\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -7,4 +7,5 @@ matplotlib\n Pillow\n requests\n psutil\n-imageio\n\\ No newline at end of file\n+imageio\n+#pip install -r requirements.txt\n\\ No newline at end of file'

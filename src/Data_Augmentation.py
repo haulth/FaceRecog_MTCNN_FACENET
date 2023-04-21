@@ -52,7 +52,7 @@ class ImageAugmenter:
 
 if __name__ == '__main__':
     input_dir = "Dataset/FaceData/raw"
-    output_dir = "Dataset/FaceData/processed"
+    output_dir = "Dataset/FaceData/raw_augmented"
 
     augmenter = ImageAugmenter(input_dir, output_dir)
     augmenter.augment()
