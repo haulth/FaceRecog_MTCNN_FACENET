@@ -220,18 +220,152 @@
         const response = await fetch(API_BASE + '/train_visualization');
         const data = await response.json();
         if (!data.success) { alert(data.message); loading.classList.add('hidden'); return; }
+        
         document.getElementById('vizTotalClasses').textContent = data.total_classes;
         document.getElementById('vizTotalImages').textContent = data.total_images;
         document.getElementById('vizVariance').textContent = (data.explained_variance[0] * 100).toFixed(1) + '%';
+        
+        // Tạo datasets cho scatter plot
         const classMap = {};
         data.class_stats.forEach(cls => { classMap[cls.name] = { color: cls.color, data: [] }; });
         data.data_points.forEach(point => { classMap[point.class_name].data.push({ x: point.x, y: point.y }); });
+        
         const datasets = [];
         Object.keys(classMap).forEach(className => {
-          datasets.push({ label: className, data: classMap[className].data, backgroundColor: classMap[className].color, borderColor: classMap[className].color, borderWidth: 1, pointRadius: 6, pointHoverRadius: 8 });
+          datasets.push({ 
+            label: className, 
+            data: classMap[className].data, 
+            backgroundColor: classMap[className].color, 
+            borderColor: classMap[className].color, 
+            borderWidth: 1, 
+            pointRadius: 6, 
+            pointHoverRadius: 8 
+          });
         });
+        
+        // Tính x_min, x_max, y_min, y_max từ data points
+        let x_min = Infinity, x_max = -Infinity, y_min = Infinity, y_max = -Infinity;
+        data.data_points.forEach(p => {
+          if (p.x < x_min) x_min = p.x;
+          if (p.x > x_max) x_max = p.x;
+          if (p.y < y_min) y_min = p.y;
+          if (p.y > y_max) y_max = p.y;
+        });
+        // Thêm padding
+        const padX = (x_max - x_min) * 0.1;
+        const padY = (y_max - y_min) * 0.1;
+        x_min -= padX; x_max += padX;
+        y_min -= padY; y_max += padY;
+        
         const ctx = document.getElementById('svmChart').getContext('2d');
         if (svmChartInstance) svmChartInstance.destroy();
+        
+        // Màu cho mỗi hyperplane (tương ứng với class)
+        const hpColors = ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
+        
+        // Plugin vẽ hyperplanes (decision boundaries)
+        const hyperplanePlugin = {
+          id: 'hyperplanePlugin',
+          afterDatasetsDraw: function(chart) {
+            if (!data.decision_boundary || !data.decision_boundary.hyperplanes) return;
+            
+            const ctx = chart.ctx;
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            const hyperplanes = data.decision_boundary.hyperplanes;
+            
+            ctx.save();
+            
+            // Với mỗi hyperplane: w[0]*x + w[1]*y + b = 0
+            // => y = -(w[0]*x + b) / w[1]
+            hyperplanes.forEach((hp, idx) => {
+              const w = hp.w;
+              const b = hp.b;
+              const color = hpColors[idx % hpColors.length];
+              
+              // Tính 2 điểm đầu cuối của đường thẳng trong vùng hiển thị
+              let points = [];
+              
+              if (Math.abs(w[1]) > 1e-6) {
+                // Tính y tại x_min và x_max
+                const y_at_xmin = -(w[0] * x_min + b) / w[1];
+                const y_at_xmax = -(w[0] * x_max + b) / w[1];
+                points.push({ x: x_min, y: y_at_xmin });
+                points.push({ x: x_max, y: y_at_xmax });
+              } else if (Math.abs(w[0]) > 1e-6) {
+                // Đường thẳng đứng: x = -b / w[0]
+                const x_val = -b / w[0];
+                points.push({ x: x_val, y: y_min });
+                points.push({ x: x_val, y: y_max });
+              }
+              
+              if (points.length === 2) {
+                // Clip đường thẳng vào vùng hiển thị
+                const clipped = clipLineToRect(points[0], points[1], x_min, x_max, y_min, y_max);
+                if (clipped) {
+                  const px1 = xScale.getPixelForValue(clipped.x1);
+                  const py1 = yScale.getPixelForValue(clipped.y1);
+                  const px2 = xScale.getPixelForValue(clipped.x2);
+                  const py2 = yScale.getPixelForValue(clipped.y2);
+                  
+                  // Vẽ đường với màu tương ứng class
+                  ctx.beginPath();
+                  ctx.lineWidth = 2.5;
+                  ctx.strokeStyle = color;
+                  ctx.setLineDash([8, 4]); // đường nét đứt để phân biệt
+                  ctx.moveTo(px1, py1);
+                  ctx.lineTo(px2, py2);
+                  ctx.stroke();
+                  ctx.setLineDash([]);
+                  
+                  // Vẽ label cho hyperplane
+                  const midX = (px1 + px2) / 2;
+                  const midY = (py1 + py2) / 2;
+                  ctx.fillStyle = color;
+                  ctx.font = 'bold 11px Arial';
+                  const label = hp.class_name || ('Class ' + idx);
+                  ctx.fillText(label, midX + 5, midY - 5);
+                }
+              }
+            });
+            
+            ctx.restore();
+          }
+        };
+        
+        // Hàm clip đường thẳng vào hình chữ nhật
+        function clipLineToRect(p1, p2, xMin, xMax, yMin, yMax) {
+          let x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
+          
+          // Cohen-Sutherland simplified
+          function code(x, y) {
+            let c = 0;
+            if (x < xMin) c |= 1;
+            if (x > xMax) c |= 2;
+            if (y < yMin) c |= 4;
+            if (y > yMax) c |= 8;
+            return c;
+          }
+          
+          let c1 = code(x1, y1), c2 = code(x2, y2);
+          
+          while (true) {
+            if ((c1 | c2) === 0) return { x1, y1, x2, y2 };
+            if ((c1 & c2) !== 0) return null;
+            
+            let c = c1 !== 0 ? c1 : c2;
+            let x, y;
+            
+            if (c & 8) { x = x1 + (x2 - x1) * (yMax - y1) / (y2 - y1); y = yMax; }
+            else if (c & 4) { x = x1 + (x2 - x1) * (yMin - y1) / (y2 - y1); y = yMin; }
+            else if (c & 2) { y = y1 + (y2 - y1) * (xMax - x1) / (x2 - x1); x = xMax; }
+            else if (c & 1) { y = y1 + (y2 - y1) * (xMin - x1) / (x2 - x1); x = xMin; }
+            
+            if (c === c1) { x1 = x; y1 = y; c1 = code(x1, y1); }
+            else { x2 = x; y2 = y; c2 = code(x2, y2); }
+          }
+        }
+        
         svmChartInstance = new Chart(ctx, {
           type: 'scatter',
           data: { datasets: datasets },
@@ -240,44 +374,24 @@
             maintainAspectRatio: true,
             aspectRatio: 2,
             plugins: {
-              title: { display: true, text: 'SVM Model - Linear Decision Boundary', font: { size: 16, weight: 'bold' } },
+              title: { display: true, text: 'SVM Model - Linear Decision Boundary (One-vs-Rest)', font: { size: 16, weight: 'bold' } },
               legend: { display: true, position: 'right' }
             },
             scales: {
-              x: { title: { display: true, text: 'PC1', font: { size: 12 } }, grid: { color: '#e5e7eb' } },
-              y: { title: { display: true, text: 'PC2', font: { size: 12 } }, grid: { color: '#e5e7eb' } }
-            }
-          },
-          plugins: [{
-            id: 'linearBoundary',
-            beforeDatasetsDraw: function (chart) {
-              if (data.decision_boundary && data.decision_boundary.hyperplanes) {
-                const db = data.decision_boundary;
-                const ctx = chart.ctx;
-                const xScale = chart.scales.x;
-                const yScale = chart.scales.y;
-                ctx.save();
-                ctx.strokeStyle = '#dc2626';
-                ctx.lineWidth = 3;
-                db.hyperplanes.forEach(hp => {
-                  const w = hp.w;
-                  const b = hp.b;
-                  if (Math.abs(w[1]) > 0.001) {
-                    const x1 = db.x_min;
-                    const x2 = db.x_max;
-                    const y1 = -(w[0] * x1 + b) / w[1];
-                    const y2 = -(w[0] * x2 + b) / w[1];
-                    ctx.beginPath();
-                    ctx.moveTo(xScale.getPixelForValue(x1), yScale.getPixelForValue(y1));
-                    ctx.lineTo(xScale.getPixelForValue(x2), yScale.getPixelForValue(y2));
-                    ctx.stroke();
-                  }
-                });
-                ctx.restore();
+              x: { 
+                title: { display: true, text: 'PC1', font: { size: 12, weight: 'bold' } },
+                min: x_min, max: x_max
+              },
+              y: { 
+                title: { display: true, text: 'PC2', font: { size: 12, weight: 'bold' } },
+                min: y_min, max: y_max
               }
             }
-          }]
+          },
+          plugins: [hyperplanePlugin]
         });
+        
+        // Cập nhật legend
         const legendDiv = document.getElementById('classLegend');
         legendDiv.innerHTML = '';
         data.class_stats.forEach(cls => {
@@ -286,13 +400,15 @@
           item.innerHTML = '<div class="w-4 h-4 rounded-full" style="background-color: ' + cls.color + '"></div><span>' + cls.name + ' (' + cls.count + ' ảnh)</span>';
           legendDiv.appendChild(item);
         });
+        
         if (data.decision_boundary && data.decision_boundary.hyperplanes) {
           const dbInfo = document.createElement('div');
           dbInfo.className = 'col-span-2 mt-2 pt-2 border-t text-xs text-gray-600';
-          dbInfo.innerHTML = '<strong>Decision Boundary:</strong> Đường đỏ là hyperplane phân loại tuyến tính của SVM';
+          dbInfo.innerHTML = '<strong>Decision Boundary:</strong> ' + data.decision_boundary.hyperplanes.length + ' đường đỏ (One-vs-Rest cho ' + data.total_classes + ' lớp)';
           legendDiv.appendChild(dbInfo);
         }
-        console.log('Visualization loaded with LINEAR decision boundary!');
+        
+        console.log('Visualization loaded with ' + (data.decision_boundary?.hyperplanes?.length || 0) + ' hyperplanes!');
       } catch (error) {
         console.error(error);
         alert('Lỗi: ' + error.message);

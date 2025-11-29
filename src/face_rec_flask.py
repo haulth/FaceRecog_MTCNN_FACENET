@@ -597,14 +597,18 @@ def get_train_visualization():
                     print(f"[VIZ] Hyperplane: w={w}, b={b}")
                 else:
                     # Multi-class - nhiều hyperplanes (one-vs-rest)
+                    # Mỗi hyperplane tách 1 class vs tất cả class còn lại
+                    class_names_list = [cls.name for cls in dataset]
                     for i in range(len(svm_2d.coef_)):
                         w = svm_2d.coef_[i]
                         b = svm_2d.intercept_[i]
                         hyperplanes.append({
                             'w': [float(w[0]), float(w[1])],
                             'b': float(b),
-                            'class_id': i
+                            'class_id': i,
+                            'class_name': class_names_list[i] if i < len(class_names_list) else f'class_{i}'
                         })
+                        print(f"[VIZ] Hyperplane {i} ({class_names_list[i] if i < len(class_names_list) else i}): w=[{w[0]:.4f}, {w[1]:.4f}], b={b:.4f}")
                     print(f"[VIZ] So hyperplanes: {len(hyperplanes)}")
                 
                 decision_boundary['hyperplanes'] = hyperplanes
