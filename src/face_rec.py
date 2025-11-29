@@ -16,6 +16,7 @@ import collections
 from sklearn.svm import SVC
 
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', help='Path of the video you want to test on.', default=0)

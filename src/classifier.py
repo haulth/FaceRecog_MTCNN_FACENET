@@ -104,6 +104,7 @@ def main(args):
                 # print('Saved classifier model to file "%s"' % classifier_filename_exp)
                     # Train classifier
                 print('Training classifier')
+                # Huấn luyện bộ phân loại SVM nhân tuyến tính để ánh xạ embedding khuôn mặt -> nhãn người
                 model = SVC(kernel='linear', probability=True)
                 model.fit(emb_array, labels)
 

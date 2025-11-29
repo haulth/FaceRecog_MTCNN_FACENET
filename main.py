@@ -48,6 +48,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def root():
+    return FileResponse("./src/static/index.html")
+
 def get_image_from_bytes(byte_string):
     img = Image.open(io.BytesIO(byte_string))
     return img
